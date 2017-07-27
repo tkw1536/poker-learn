@@ -241,7 +241,7 @@ class Table:
             self._s.toCall = max(self._s.currBets) - self._s.currBets[actor]    #player must call maximum bet to call
 
             #request player action and parse action
-            action = self._playing[actor].act(self._s)
+            action = self._playing[actor].act(self)
             self._parseAction(action)
             if action[0] == 'raise': lastRaiser = actor
             

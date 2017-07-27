@@ -73,7 +73,7 @@ def simulate(table, nHands, firstTrain=0, nTrain=0, nBuyIn=0, tPrint=5, vocal=Fa
 
 class BasicPlayer(Player):
 
-    def _genGameFeatures(self, gameState):
+    def _genGameFeatures(self, table, gameState):
 
         """ 
         This method generates a set of features from a gameState and independently of the
@@ -103,7 +103,7 @@ class BasicPlayer(Player):
 
         return gameFeatures
 
-    def _genActionFeatures(self, action, gameState):
+    def _genActionFeatures(self, table, action, gameState):
 
         """ This method generates a set of features from a player action. """
 

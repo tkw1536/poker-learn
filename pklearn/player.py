@@ -1,8 +1,8 @@
 import random
 import numpy as np
 
-class Player:
 
+class Player:
     """
     This class keeps a player's current stack size and bankroll and is primarily responsible for
     receiving GameStates and returning actions.
@@ -20,24 +20,24 @@ class Player:
         rFactor - each raise choice is rFactor times the next largest raise choice (float)
         reg - machine learning regressor, must be sklearn or implement 'fit' and 'predict'
         """
-        
-        self._name = name            #for distinction from other players
-        self._fit = False            #True when self._reg has been fit
-        self._bankroll = bankroll    #total wealth of player
-        self._stack = 0              #chips that player has on table
-        self._features = []          #features associated with each gameState seen
-        self._stacks = []            #stack size at each time that features are recorded
-        self._labels = []            #result of each hand played
-        self._memory = memory        #max number of features, stacks, and labels to store
-        self._reg = reg              #machine learning regressor which predicts return on action
-        
-        self._train = True           #player will not update regressor if self._train is False
+
+        self._name = name  # for distinction from other players
+        self._fit = False  # True when self._reg has been fit
+        self._bankroll = bankroll  # total wealth of player
+        self._stack = 0  # chips that player has on table
+        self._features = []  # features associated with each gameState seen
+        self._stacks = []  # stack size at each time that features are recorded
+        self._labels = []  # result of each hand played
+        self._memory = memory  # max number of features, stacks, and labels to store
+        self._reg = reg  # machine learning regressor which predicts return on action
+
+        self._train = True  # player will not update regressor if self._train is False
 
         if rFactor == None and nRaises != 1:
             raise Exception('Must set \'rFactor\' when \'nRaises\ is not 1.')
         if rFactor <= 0 or rFactor >= 1: raise Exception('rFActor must be between 0 and 1, exclusive.')
 
-        #generate logrithmically distributed raise choices, as multiples of stack
+        # generate logrithmically distributed raise choices, as multiples of stack
         self._rChoices = [1]
         for i in range(nRaises - 1):
             self._rChoices = [self._rChoices[0] * rFactor] + self._rChoices
@@ -46,7 +46,7 @@ class Player:
 
         """ This method moves chips to player's bankroll such that player's stack is 'newStack'. """
 
-        if newStack > self._bankroll + self._stack: return False    #player cannot buy chips
+        if newStack > self._bankroll + self._stack: return False  # player cannot buy chips
 
         if newStack < self._stack: raise Exception('Requested stack is smaller than old stack.')
 
@@ -60,44 +60,45 @@ class Player:
         self._bankroll += self._stack
         self._stack = 0
 
-    def act(self, gameState):
-
+    def act(self, table):
         """ 
-        Accepts a gameState object and returns an action in the form (action_string, amount). 
+        Accepts a table object and returns an action in the form (action_string, amount).
         Valid action_strings are fold, check, call, raise, and bet.
         """
+        gameState = table._s
 
-        gameFeatures = self._genGameFeatures(gameState)
-        allActions = self._allActions(gameState)  
+        gameFeatures = self._genGameFeatures(table, gameState)
+        allActions = self._allActions(gameState)
 
-        #if player has not yet been trained
-        if not self._fit: action = random.choice(allActions)    #take a random action
+        # if player has not yet been trained
+        if not self._fit:
+            action = random.choice(allActions)  # take a random action
 
         else:
-            #determine best action
+            # determine best action
             allFeatures = []
-            for a in allActions: allFeatures.append(gameFeatures + self._genActionFeatures(a, gameState))
+            for a in allActions: allFeatures.append(gameFeatures + self._genActionFeatures(table, a, gameState))
             pReturn = self._reg.predict(allFeatures)
             action = allActions[np.argmax(pReturn)]
 
-        #store action features
-        actionFeatures = self._genActionFeatures(action, gameState)  
+        # store action features
+        actionFeatures = self._genActionFeatures(table, action, gameState)
 
-        if self._train: 
+        if self._train:
             self._stacks.append(self._stack)
             self._features.append(gameFeatures + actionFeatures)
-        return action      
+        return action
 
     def removeChips(self, amt):
         if amt > self._stack: raise Exception('Requested chips is greater than stack size.')
         if type(amt) != int: raise Exception('Must remove integer number of chips.')
         self._stack -= amt
 
-    def addChips(self, amt): 
+    def addChips(self, amt):
         if type(amt) != int: raise Exception('Must add integer number of chips.')
         self._stack += amt
 
-    def endHand(self): 
+    def endHand(self):
 
         """
         This method discards data older than 'self._memory' and updates 'self._labels' with 
@@ -117,72 +118,87 @@ class Player:
         This method trains the player's regressor using the set of gathered features and labels
         in ordered to predict the outcome of any given action.
         """
-        
+
         if not self._train: return
 
         self._reg.fit(self._features, self._labels)
         self._fit = True
 
     def _allActions(self, gameState):
-        
+
         """ This method accepts the dictionary gameState and returns the set of all possible actions. """
 
-        toCall = gameState.toCall    #amount necessary to call
-        minRaise = gameState.minRaise    #new total bet amount necessary to raise
+        toCall = gameState.toCall  # amount necessary to call
+        minRaise = gameState.minRaise  # new total bet amount necessary to raise
         currentBets = gameState.currBets
         myCurrentBet = currentBets[gameState.actor]
-        maxBet = self._stack + myCurrentBet    #maximum bet player could have in pot, including chips already in pot
+        maxBet = self._stack + myCurrentBet  # maximum bet player could have in pot, including chips already in pot
 
-        actions = []    #set of all possible actions
+        actions = []  # set of all possible actions
 
-        if toCall > self._stack:   #player cannot match entire bet
+        if toCall > self._stack:  # player cannot match entire bet
             actions.append(('call',))
             actions.append(('fold',))
             return actions
-            
-        if maxBet < minRaise:    #player has enough chips to call but not to raise
-            if toCall == 0: actions.append(('check',))
-            else: 
+
+        if maxBet < minRaise:  # player has enough chips to call but not to raise
+            if toCall == 0:
+                actions.append(('check',))
+            else:
                 actions.append(('call',))
                 actions.append(('fold',))
             return actions
 
-        #add eligible raise choices to actions
-        #raise actions include a raise to amount, not a raise by amount
+        # add eligible raise choices to actions
+        # raise actions include a raise to amount, not a raise by amount
         for r in self._rChoices:
-            amt = int(self._stack * r) 
+            amt = int(self._stack * r)
             if amt >= minRaise and amt <= maxBet: actions.append(('raise', amt))
 
-        #player has enough chips to raise
-        if toCall == 0: actions.append(('check',))
+        # player has enough chips to raise
+        if toCall == 0:
+            actions.append(('check',))
         else:
             actions.append(('call',))
             actions.append(('fold',))
-        
+
         return actions
 
-    def _genGameFeatures(self, gameState): raise Exception('This method must be implemented in an inherited class.')
+    def _genGameFeatures(self, table, gameState):
+        raise Exception('This method must be implemented in an inherited class.')
 
-    def _genActionFeatures(self, action, gameState): raise Exception('This method must be implemented in an inherited class.')
+    def _genActionFeatures(self, table, action, gameState):
+        raise Exception('This method must be implemented in an inherited class.')
 
-    def takeHoleCards(self, cards): self._cards = cards
+    def takeHoleCards(self, cards):
+        self._cards = cards
 
-    def stopTraining(self): self._train = False
+    def stopTraining(self):
+        self._train = False
 
-    def startTraining(self): self._train = True
+    def startTraining(self):
+        self._train = True
 
-    def show(self): return self._cards
+    def show(self):
+        return self._cards
 
-    def getStack(self): return self._stack
+    def getStack(self):
+        return self._stack
 
-    def getBankroll(self): return self._bankroll
+    def getBankroll(self):
+        return self._bankroll
 
-    def getName(self): return self._name
+    def getName(self):
+        return self._name
 
-    def getRaiseChoices(self): return self._rChoices[:]
+    def getRaiseChoices(self):
+        return self._rChoices[:]
 
-    def getFeatures(self): return self._features[:]
+    def getFeatures(self):
+        return self._features[:]
 
-    def getLabels(self): return self._labels[:]
+    def getLabels(self):
+        return self._labels[:]
 
-    def setBankroll(self, amt): self._bankroll = amt
+    def setBankroll(self, amt):
+        self._bankroll = amt
