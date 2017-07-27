@@ -1,7 +1,7 @@
 from player import Player
 from random import shuffle
 from card import Card
-from deuces.deuces import Evaluator
+from deuces import Evaluator
 from gamestate import GameState
 
 class Table:    

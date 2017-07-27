@@ -1,4 +1,4 @@
-from deuces import deuces
+import deuces
 
 class Card:
     
