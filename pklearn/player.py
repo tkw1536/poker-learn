@@ -31,8 +31,11 @@ class Player:
         self._labels = []  # result of each hand played
         self._memory = memory  # max number of features, stacks, and labels to store
         self._reg = reg  # machine learning regressor which predicts return on action
-
         self._train = True  # player will not update regressor if self._train is False
+
+        self._numRaises = 0
+        self._raiseValues = 8 * [0]
+
 
         if rFactor == None and nRaises != 1:
             raise Exception('Must set \'rFactor\' when \'nRaises\ is not 1.')
@@ -91,6 +94,11 @@ class Player:
         if self._train:
             self._stacks.append(self._stack)
             self._features.append(gameFeatures + actionFeatures)
+
+        if action[0] == 'raise':
+            self._raiseValues[self._numRaises] = action[1]
+            self._numRaises += 1
+
         return action
 
     def removeChips(self, amt):
@@ -118,6 +126,9 @@ class Player:
         self._features = self._features[-self._memory:]
         self._stacks = self._stacks[-self._memory:]
         self._labels = self._labels[-self._memory:]
+
+        self._numRaises = 0
+        self._raiseValues = 8 * [0]
 
     def train(self):
 
@@ -186,8 +197,14 @@ class Player:
     def stopTraining(self):
         self._train = False
 
+        self._numRaises = 0
+        self._raiseValues =  8 * [0]
+
     def startTraining(self):
         self._train = True
+
+        self._numRaises = 0
+        self._raiseValues = 8 * [0]
 
     def show(self):
         return self._cards
