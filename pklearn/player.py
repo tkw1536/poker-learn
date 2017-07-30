@@ -8,7 +8,8 @@ class Player:
     receiving GameStates and returning actions.
     """
 
-    def __init__(self, name, bankroll, nRaises, memory, rFactor=None, reg=None):
+    def __init__(self, name, bankroll, nRaises, memory, rFactor=None,
+                 reg=None):
 
         """ 
         Parameters
@@ -35,7 +36,8 @@ class Player:
 
         if rFactor == None and nRaises != 1:
             raise Exception('Must set \'rFactor\' when \'nRaises\ is not 1.')
-        if rFactor <= 0 or rFactor >= 1: raise Exception('rFActor must be between 0 and 1, exclusive.')
+        if rFactor <= 0 or rFactor >= 1: raise Exception(
+            'rFActor must be between 0 and 1, exclusive.')
 
         # generate logrithmically distributed raise choices, as multiples of stack
         self._rChoices = [1]
@@ -48,7 +50,8 @@ class Player:
 
         if newStack > self._bankroll + self._stack: return False  # player cannot buy chips
 
-        if newStack < self._stack: raise Exception('Requested stack is smaller than old stack.')
+        if newStack < self._stack: raise Exception(
+            'Requested stack is smaller than old stack.')
 
         move = newStack - self._stack
         self._bankroll -= move
@@ -77,7 +80,8 @@ class Player:
         else:
             # determine best action
             allFeatures = []
-            for a in allActions: allFeatures.append(gameFeatures + self._genActionFeatures(table, a, gameState))
+            for a in allActions: allFeatures.append(
+                gameFeatures + self._genActionFeatures(table, a, gameState))
             pReturn = self._reg.predict(allFeatures)
             action = allActions[np.argmax(pReturn)]
 
@@ -90,12 +94,15 @@ class Player:
         return action
 
     def removeChips(self, amt):
-        if amt > self._stack: raise Exception('Requested chips is greater than stack size.')
-        if type(amt) != int: raise Exception('Must remove integer number of chips.')
+        if amt > self._stack: raise Exception(
+            'Requested chips is greater than stack size.')
+        if type(amt) != int: raise Exception(
+            'Must remove integer number of chips.')
         self._stack -= amt
 
     def addChips(self, amt):
-        if type(amt) != int: raise Exception('Must add integer number of chips.')
+        if type(amt) != int: raise Exception(
+            'Must add integer number of chips.')
         self._stack += amt
 
     def endHand(self):
@@ -153,7 +160,8 @@ class Player:
         # raise actions include a raise to amount, not a raise by amount
         for r in self._rChoices:
             amt = int(self._stack * r)
-            if amt >= minRaise and amt <= maxBet: actions.append(('raise', amt))
+            if amt >= minRaise and amt <= maxBet: actions.append(
+                ('raise', amt))
 
         # player has enough chips to raise
         if toCall == 0:
@@ -165,10 +173,12 @@ class Player:
         return actions
 
     def _genGameFeatures(self, table, gameState):
-        raise Exception('This method must be implemented in an inherited class.')
+        raise Exception(
+            'This method must be implemented in an inherited class.')
 
     def _genActionFeatures(self, table, action, gameState):
-        raise Exception('This method must be implemented in an inherited class.')
+        raise Exception(
+            'This method must be implemented in an inherited class.')
 
     def takeHoleCards(self, cards):
         self._cards = cards
